@@ -4,5 +4,5 @@ import fetchPlugin from './fetchPlugin';
 import vuetify from './vuetify';
 
 export function registerPlugins(app) {
-    app.use(vuetify).use(pinia).use(fetchPlugin, { baseURL: 'http://localhost:8000' }).use(router);
+    app.use(vuetify).use(pinia).use(fetchPlugin, { baseURL: import.meta.env.VITE_API_URL }).use(router);
 }
