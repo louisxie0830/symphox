@@ -89,7 +89,8 @@ const fetchProducts = async () => {
     if (state.q) {
       params.q = state.q;
     }
-    let url = '/products?' + new URLSearchParams(params).toString();
+    // let url = '/products?' + new URLSearchParams(params).toString();
+    let url = '/products';
     loading.value = true;
     const res = await fetch(url, {
       method: 'GET',
