@@ -11,7 +11,7 @@ const initialState = {
   q: '',
   p: 1,
   sortBy: 'name',
-  pageSize: 10,
+  pageSize: 20,
   sort: 'asc'
 };
 
@@ -29,49 +29,33 @@ const state = reactive({
 const v$ = useVuelidate(rules, state);
 
 const loading = ref(false);
-const currentPage = ref(1);
 const products = ref([]);
 const totalCount = ref(0);
-const currentPageSize = ref(20);
 
 const headers = reactive([
   { key: 'name', title: '商品名稱', sort: 'asc' },
   { key: 'price', title: '價格', sort: 'asc' },
   { key: 'stock', title: '庫存', sort: 'asc' },
-  { key: 'total', title: '總價值', sortable: false }
+  { key: 'total', title: '總價值' }
 ]);
 
 const pageCount = computed(() => Math.ceil(totalCount.value / state.pageSize));
 
-const setProducts = (value) => {
-  if (!value) return;
-  products.value = value.map((item) => {
-    item.total = item.stock * item.price;
-    return item;
-  });
-};
 
 const formatPrice = (price) => price && `$${price.toLocaleString('en-US')}` || '';
+
 
 const toggleSort = async ({ key }) => {
   if (state.sortBy === key) {
     state.sort = state.sort === 'asc' ? 'desc' : 'asc';
-    headers.forEach(header => {
-      if (header.key === key) {
-        header.sort = state.sort;
-      }
-    });
   } else {
-    currentPage.value = 1;
+    state.sortBy = key;
+    state.sort = 'asc';
     state.p = 1;
-    headers.forEach(header => {
-      if (header.key === key) {
-        header.sort = 'asc';
-        state.sort = header.sort;
-        state.sortBy = key;
-      }
-    });
   }
+  headers.forEach(header => {
+    if (header.key === key) header.sort = state.sort;
+  });
   await fetchProducts();
 };
 
@@ -86,12 +70,10 @@ const onQueryChange = () => {
 };
 
 const onPageChange = async (page) => {
-  state.p = page;
   await fetchProducts();
 };
 
 const onPageSizeChange = async (pageSize) => {
-  state.pageSize = pageSize;
   await fetchProducts();
 };
 
@@ -117,7 +99,10 @@ const fetchProducts = async () => {
     });
     if (res?.products) {
       totalCount.value = res.total;
-      setProducts(res.products);
+      products.value = res.products.map(item => ({
+        ...item,
+        total: item.stock * item.price
+      }));
     }
   } catch (error) {
 
@@ -153,23 +138,39 @@ onMounted(async () => {
         />
       </form>
     </v-card-text>
-    <v-table fixed-header height="600px">
+    <v-table
+      fixed-header
+      height="600px"
+    >
       <thead>
         <tr>
-          <th class="text-left" v-for="item in headers" :key="item.key">
+          <th
+            class="text-left"
+            v-for="item in headers"
+            :key="item.key"
+          >
             <div @click.prevent="() => toggleSort(item)">{{ item.title }}
-              <v-icon v-if="item.key !== 'total'" :icon="item.sort === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down'"/>
+              <v-icon
+                v-if="item.key !== 'total'"
+                :icon="item.sort === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down'"
+              />
             </div>
           </th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="item in products" :key="item.name">
+        <tr
+          v-for="item in products"
+          :key="item.name"
+        >
           <td>{{ item.name }}</td>
           <td>{{ formatPrice(item.price) }}</td>
           <td>
             <div :class="item.stock < 10 ? 'text-red-lighten-1' : ''">
-              {{ item.stock }} <span v-show="item.stock < 10" class="text-red-lighten-1">(低庫存)</span>
+              {{ item.stock }} <span
+                v-show="item.stock < 10"
+                class="text-red-lighten-1"
+              >(低庫存)</span>
             </div>
           </td>
           <td>{{ formatPrice(item.total) }}</td>
@@ -178,10 +179,22 @@ onMounted(async () => {
     </v-table>
     <v-card-actions class="d-flex">
       <div>
-        <v-select v-model="currentPageSize" :items="[10, 20, 40]" variant="outlined" single-line hide-details @update:modelValue="onPageSizeChange" />
+        <v-select
+          v-model="state.pageSize"
+          :items="[10, 20, 40]"
+          variant="outlined"
+          single-line
+          hide-details
+          @update:modelValue="onPageSizeChange"
+        />
       </div>
       <div>
-        <v-pagination v-model="currentPage" :total-visible="pageCount / 2" :length="pageCount" @update:modelValue="onPageChange" />
+        <v-pagination
+          v-model="state.p"
+          :total-visible="pageCount / 2"
+          :length="pageCount"
+          @update:modelValue="onPageChange"
+        />
       </div>
     </v-card-actions>
   </v-card>

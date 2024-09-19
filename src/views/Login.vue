@@ -1,5 +1,5 @@
 <script setup>
-import { inject, onMounted, reactive } from 'vue';
+import { inject, onMounted, ref, reactive } from 'vue';
 import { useRouter } from 'vue-router'
 import { useVuelidate } from '@vuelidate/core'
 import { required, maxLength } from '@vuelidate/validators'
@@ -9,14 +9,12 @@ const globalStore = useGlobalStore();
 const fetch = inject('fetch');
 const router = useRouter();
 
+
 const initialState = {
   username: 'testuser',
   password: 'ShowMeTheMoney'
 };
 
-const state = reactive({
-  ...initialState,
-});
 
 const rules = {
   username: {
@@ -29,13 +27,20 @@ const rules = {
   }
 };
 
+const state = reactive({
+  ...initialState
+});
+
 const v$ = useVuelidate(rules, state);
+
+const isLoading = ref(false);
 
 
 const login = async () => {
   const isFormCorrect = await v$.value.$validate();
   if (!isFormCorrect) return;
   try {
+    isLoading.value = true;
     const res = await fetch('/login', {
       method: 'POST',
       body: JSON.stringify({
@@ -50,6 +55,8 @@ const login = async () => {
     }
   } catch (error) {
     console.log('error: ', error);
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -77,6 +84,7 @@ const login = async () => {
             @input="v$.username.$touch"
             clearable
             variant="underlined"
+            auto-complete="username"
           ></v-text-field>
 
           <v-text-field
@@ -89,17 +97,12 @@ const login = async () => {
             @input="v$.password.$touch"
             clearable
             variant="underlined"
+            auto-complete="password"
           ></v-text-field>
 
           <br />
 
-          <v-btn
-            class="me-4 bg-primary"
-            block
-            @click.prevent="login"
-          >
-            登入
-          </v-btn>
+          <v-btn class="me-4 bg-primary" block @click.prevent="login" :loading="isLoading" :disabled="v$.$invalid || isLoading">登入</v-btn>
         </form>
       </v-card-text>
     </v-card>
