@@ -89,8 +89,7 @@ const fetchProducts = async () => {
     if (state.q) {
       params.q = state.q;
     }
-    // let url = '/products?' + new URLSearchParams(params).toString();
-    let url = '/products';
+    let url = '/products?' + new URLSearchParams(params).toString();
     loading.value = true;
     const res = await fetch(url, {
       method: 'GET',
@@ -124,8 +123,7 @@ onMounted(async () => {
 <template>
   <v-card flat>
     <v-card-text>
-      <form>
-        <v-text-field
+      <v-text-field
           v-model="state.q"
           :error-messages="v$.q.$errors.map(e => e.$message)"
           label="Search"
@@ -137,7 +135,6 @@ onMounted(async () => {
           @input="onQueryChange"
           clearable
         />
-      </form>
     </v-card-text>
     <v-table
       fixed-header
